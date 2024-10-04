@@ -2,8 +2,10 @@ package org.carecode.mw.lims.mw.sweLabLumi;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -94,18 +96,49 @@ public class SweLabLumiServer {
     }
 
     private void handleClient(Socket clientSocket) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-            StringBuilder incomingData = new StringBuilder();  // To store incoming data
-            String line;
+        try (InputStream in = new BufferedInputStream(clientSocket.getInputStream()); OutputStream out = new BufferedOutputStream(clientSocket.getOutputStream())) {
 
-            // Read the incoming data line by line
-            while ((line = reader.readLine()) != null) {
-                incomingData.append(line).append("\n");  // Append each line of data
+            StringBuilder hl7Message = new StringBuilder();  // To capture HL7 message
+            boolean sessionActive = true;
+
+            while (sessionActive) {
+                int data = in.read();
+                if (data == -1) {
+                    break;  // End of stream
+                }
+
+                switch (data) {
+                    case ENQ:
+                        logger.debug("Received ENQ");
+                        out.write(ACK);
+                        out.flush();
+                        logger.debug("Sent ACK");
+                        break;
+                    case ACK:
+                        logger.debug("ACK Received.");
+                        handleAck(clientSocket, out);
+                        break;
+                    case EOT:
+                        logger.debug("EOT Received");
+                        handleEot(out);
+                        sessionActive = false;
+                        break;
+                    case '\r':  // ASCII 13, treat as end of message
+                        if (hl7Message.length() > 0) {
+                            logger.debug("Complete HL7 Message: " + hl7Message.toString());
+                            processMessage(hl7Message.toString(), clientSocket);
+                            hl7Message.setLength(0);  // Clear message buffer after processing
+                            out.write(ACK);  // Send acknowledgment
+                            out.flush();
+                            logger.debug("Sent ACK after processing HL7 message");
+                        }
+                        break;
+                    default:
+                        // Append all received data to the HL7 message
+                        hl7Message.append((char) data);
+                        break;
+                }
             }
-
-            // Print the captured data
-            System.out.println("Captured Data: " + incomingData.toString());
-
         } catch (IOException e) {
             logger.error("Error during client communication", e);
         }
