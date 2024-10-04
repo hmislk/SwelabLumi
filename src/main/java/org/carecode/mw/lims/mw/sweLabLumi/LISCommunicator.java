@@ -11,14 +11,22 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.carecode.lims.libraries.AnalyzerDetails;
 import org.carecode.lims.libraries.DataBundle;
+import org.carecode.lims.libraries.LimsSettings;
+import org.carecode.lims.libraries.MiddlewareSettings;
 import org.carecode.lims.libraries.QueryRecord;
 import org.carecode.lims.libraries.ResultsRecord;
 import static org.carecode.mw.lims.mw.sweLabLumi.SweLabLumi.logger;
 
 public class LISCommunicator {
+    
+    public static final Logger logger = LogManager.getLogger(SweLabLumiServer.class.getName());
 
 //    static boolean testing = true;
     private static final Gson gson = new Gson();
@@ -86,8 +94,88 @@ public class LISCommunicator {
 
         return null;
     }
+    
+    public static void pushResults(DataBundle db) {
+        System.out.println("pushResults = ");
+        Gson gson = new Gson(); // Ensure Gson is available here for serializing and deserializing
+        try {
+           
+            String pushResultsEndpoint =  SettingsLoader.getSettings().getLimsSettings().getLimsServerBaseUrl() + "/test_results";
+            System.out.println("pushResultsEndpoint = " + pushResultsEndpoint);
+            URL url = new URL(pushResultsEndpoint);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
 
-    public static void pushResults(DataBundle patientDataBundle) {
+            MiddlewareSettings ms = new MiddlewareSettings();
+            AnalyzerDetails ad = new AnalyzerDetails();
+            LimsSettings ls = new LimsSettings();
+            ls.setUsername("buddhika");
+            ls.setPassword("Buddhika123@");
+            ms.setAnalyzerDetails(ad);
+            ms.setLimsSettings(ls);
+            ms.getAnalyzerDetails().setAnalyzerName("MindrayBC5150");
+            // Set middleware settings and serialize DataBundle to JSON
+            db.setMiddlewareSettings(ms );
+            String jsonInputString = gson.toJson(db);
+            System.out.println("jsonInputString = " + jsonInputString);
+
+            // Send the JSON in the request body
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            int responseCode = conn.getResponseCode();
+            System.out.println("responseCode = " + responseCode);
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                System.out.println("ok");
+                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                StringBuilder response = new StringBuilder();
+                String inputLine;
+
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+                System.out.println("response.toString() = " + response.toString());
+
+                // Optionally process the server response (if needed)
+                JsonObject responseObject = JsonParser.parseString(response.toString()).getAsJsonObject();
+                logger.info("Response from server: " + responseObject.toString());
+
+                // Extract status
+                String status = responseObject.get("status").getAsString();
+                logger.info("Status: " + status);
+
+                // Extract the list of ResultsRecord objects
+                JsonArray detailsArray = responseObject.getAsJsonArray("details");
+
+                // Deserialize the JSON array into a list of ResultsRecord objects
+                List<ResultsRecord> resultsRecords = new ArrayList<>();
+                for (JsonElement element : detailsArray) {
+                    ResultsRecord record = gson.fromJson(element, ResultsRecord.class);
+                    resultsRecords.add(record);
+                }
+
+                // Log and process the ResultsRecord objects as needed
+                for (ResultsRecord record : resultsRecords) {
+                    logger.info("Sample ID: " + record.getSampleId()
+                            + ", Test: " + record.getTestCode()
+                            + ", Status: " + record.getStatus());
+                }
+
+            } else {
+                System.out.println("POST request failed. Response code: " + responseCode);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void pushResultsOld(DataBundle patientDataBundle) {
         System.out.println("pushResults = ");
         try {
             System.out.println("SettingsLoader.getSettings() = " + SettingsLoader.getSettings());

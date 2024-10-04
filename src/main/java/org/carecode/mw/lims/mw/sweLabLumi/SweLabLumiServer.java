@@ -96,6 +96,103 @@ public class SweLabLumiServer {
     }
 
     private void handleClient(Socket clientSocket) {
+    LISCommunicator lisCommunicator = new LISCommunicator();
+
+    try (InputStream in = new BufferedInputStream(clientSocket.getInputStream()); OutputStream out = new BufferedOutputStream(clientSocket.getOutputStream())) {
+
+        StringBuilder hl7Message = new StringBuilder();  // To capture HL7 message
+        boolean sessionActive = true;
+        String sampleId = "";  // Store sample ID
+
+        while (sessionActive) {
+            int data = in.read();
+            if (data == -1) {
+                break;  // End of stream
+            }
+
+            switch (data) {
+                case ENQ:
+                    logger.debug("Received ENQ");
+                    out.write(ACK);
+                    out.flush();
+                    logger.debug("Sent ACK");
+                    break;
+                case ACK:
+                    logger.debug("ACK Received.");
+                    handleAck(clientSocket, out);
+                    break;
+                case EOT:
+                    logger.debug("EOT Received");
+                    handleEot(out);
+                    sessionActive = false;
+                    break;
+                case '\r':  // ASCII 13, treat as end of message
+                    if (hl7Message.length() > 0) {
+                        String message = hl7Message.toString();
+                        logger.debug("Complete HL7 Message: " + message);
+                        
+                        // Split the message into lines
+                        String[] lines = message.split("\n");
+
+                        // Process each line similarly to `connectAndReadData`
+                        for (String line : lines) {
+                            logger.info("Received data: " + line);
+
+                            // Extract the sample ID from OBR segment
+                            if (line.startsWith("OBR|")) {
+                                String[] parts = line.split("\\|");
+                                if (parts.length > 3) {
+                                    sampleId = parts[3];
+                                    logger.info("Sample ID extracted: " + sampleId);
+                                }
+                            } 
+                            // Handle OBX segments for test results
+                            else if (line.startsWith("OBX|")) {
+                                String[] parts = line.split("\\|");
+                                if (parts.length > 6) {
+                                    String[] testDetails = parts[3].split("\\^");
+                                    String testCode = testDetails[1];  // Getting the descriptive part (e.g., WBC)
+                                    String resultValue = parts[5];
+                                    String resultUnits = parts[6];
+                                    String resultDateTime = "";  // Assuming the result date-time isn't provided in the segment
+
+                                    // Create ResultsRecord with the constructor
+                                    ResultsRecord rr = new ResultsRecord(testCode, resultValue, resultUnits,
+                                            resultDateTime, "MindRayBC5150", sampleId);
+
+                                    DataBundle db = new DataBundle();
+                                    db.setMiddlewareSettings(SettingsLoader.getSettings());
+                                    db.getResultsRecords().add(rr);
+
+                                    // Push results using LISCommunicator
+                                    LISCommunicator.pushResults(db);
+
+                                    logger.info("Test Code: " + testCode);
+                                    logger.info("Result Value: " + resultValue);
+                                    logger.info("Result Units: " + resultUnits);
+                                }
+                            }
+                        }
+
+                        hl7Message.setLength(0);  // Clear message buffer after processing
+                        out.write(ACK);  // Send acknowledgment
+                        out.flush();
+                        logger.debug("Sent ACK after processing HL7 message");
+                    }
+                    break;
+                default:
+                    // Append all received data to the HL7 message
+                    hl7Message.append((char) data);
+                    break;
+            }
+        }
+    } catch (IOException e) {
+        logger.error("Error during client communication", e);
+    }
+}
+
+    
+    private void handleClientOld2(Socket clientSocket) {
         try (InputStream in = new BufferedInputStream(clientSocket.getInputStream()); OutputStream out = new BufferedOutputStream(clientSocket.getOutputStream())) {
 
             StringBuilder hl7Message = new StringBuilder();  // To capture HL7 message
