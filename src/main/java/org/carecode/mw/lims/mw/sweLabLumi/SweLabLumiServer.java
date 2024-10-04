@@ -95,42 +95,18 @@ public class SweLabLumiServer {
 
     private void handleClient(Socket clientSocket) {
         try (InputStream in = new BufferedInputStream(clientSocket.getInputStream()); OutputStream out = new BufferedOutputStream(clientSocket.getOutputStream())) {
-            StringBuilder hl7Message = new StringBuilder();  // Variable to store the HL7 message
-            boolean sessionActive = true;
 
-            while (sessionActive) {
-                int data = in.read();
+            StringBuilder incomingData = new StringBuilder();  // To store incoming data
+            int data;
 
-                switch (data) {
-                    case ENQ:
-                        logger.debug("Received ENQ");
-                        out.write(ACK);
-                        out.flush();
-                        logger.debug("Sent ACK");
-                        break;
-                    case STX:
-                        hl7Message = new StringBuilder();  // Reset HL7 message for new session
-                        while ((data = in.read()) != ETX) {
-                            if (data == -1) {
-                                break;
-                            }
-                            hl7Message.append((char) data);  // Append the HL7 message data
-                        }
-                        logger.debug("HL7 Message received: " + hl7Message);
-                        // Process the HL7 message here as needed
-                        out.write(ACK);
-                        out.flush();
-                        logger.debug("Sent ACK after STX-ETX block");
-                        break;
-                    case EOT:
-                        logger.debug("EOT Received");
-                        sessionActive = false;
-                        break;
-                    default:
-                        logger.debug("Received unexpected data: " + (char) data + " (ASCII: " + data + ")");
-                        break;
-                }
+            // Read data byte by byte from the input stream
+            while ((data = in.read()) != -1) {
+                incomingData.append((char) data);  // Append each byte as a character to the StringBuilder
             }
+
+            // Print the captured data
+            System.out.println("Captured Data: " + incomingData.toString());
+
         } catch (IOException e) {
             logger.error("Error during client communication", e);
         }
