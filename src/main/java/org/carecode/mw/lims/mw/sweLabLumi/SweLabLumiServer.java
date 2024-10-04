@@ -94,14 +94,13 @@ public class SweLabLumiServer {
     }
 
     private void handleClient(Socket clientSocket) {
-        try (InputStream in = new BufferedInputStream(clientSocket.getInputStream()); OutputStream out = new BufferedOutputStream(clientSocket.getOutputStream())) {
-
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
             StringBuilder incomingData = new StringBuilder();  // To store incoming data
-            int data;
+            String line;
 
-            // Read data byte by byte from the input stream
-            while ((data = in.read()) != -1) {
-                incomingData.append((char) data);  // Append each byte as a character to the StringBuilder
+            // Read the incoming data line by line
+            while ((line = reader.readLine()) != null) {
+                incomingData.append(line).append("\n");  // Append each line of data
             }
 
             // Print the captured data
