@@ -94,6 +94,24 @@ public class SweLabLumiServer {
     }
 
     private void handleClient(Socket clientSocket) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+            StringBuilder incomingData = new StringBuilder();  // To store incoming data
+            String line;
+
+            // Read the incoming data line by line
+            while ((line = reader.readLine()) != null) {
+                incomingData.append(line).append("\n");  // Append each line of data
+            }
+
+            // Print the captured data
+            System.out.println("Captured Data: " + incomingData.toString());
+
+        } catch (IOException e) {
+            logger.error("Error during client communication", e);
+        }
+    }
+
+    private void handleClientOld(Socket clientSocket) {
         try (InputStream in = new BufferedInputStream(clientSocket.getInputStream()); OutputStream out = new BufferedOutputStream(clientSocket.getOutputStream())) {
             StringBuilder asciiDebugInfo = new StringBuilder();
             boolean sessionActive = true;
@@ -568,14 +586,14 @@ public class SweLabLumiServer {
         // Result value parsing assumes the result is in the fourth field
         double resultValue = 0.0;
         String resultValueString = fields[3];
-        
+
         try {
             resultValue = Double.parseDouble(fields[3]);
             logger.debug("Result value extracted: {}", resultValue);
         } catch (NumberFormatException e) {
             logger.error("Failed to parse result value from segment: {}", resultSegment, e);
         }
-        
+
         // Units and other details
         String resultUnits = fields[4];
         logger.debug("Result units extracted: {}", resultUnits);
@@ -594,20 +612,7 @@ public class SweLabLumiServer {
                 instrumentName,
                 sampleId
         );
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
     }
 
     public static OrderRecord parseOrderRecord(String orderSegment) {
