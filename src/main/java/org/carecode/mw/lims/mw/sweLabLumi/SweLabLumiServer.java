@@ -95,6 +95,49 @@ public class SweLabLumiServer {
 
     private void handleClient(Socket clientSocket) {
         try (InputStream in = new BufferedInputStream(clientSocket.getInputStream()); OutputStream out = new BufferedOutputStream(clientSocket.getOutputStream())) {
+            StringBuilder hl7Message = new StringBuilder();  // Variable to store the HL7 message
+            boolean sessionActive = true;
+
+            while (sessionActive) {
+                int data = in.read();
+
+                switch (data) {
+                    case ENQ:
+                        logger.debug("Received ENQ");
+                        out.write(ACK);
+                        out.flush();
+                        logger.debug("Sent ACK");
+                        break;
+                    case STX:
+                        hl7Message = new StringBuilder();  // Reset HL7 message for new session
+                        while ((data = in.read()) != ETX) {
+                            if (data == -1) {
+                                break;
+                            }
+                            hl7Message.append((char) data);  // Append the HL7 message data
+                        }
+                        logger.debug("HL7 Message received: " + hl7Message);
+                        // Process the HL7 message here as needed
+                        out.write(ACK);
+                        out.flush();
+                        logger.debug("Sent ACK after STX-ETX block");
+                        break;
+                    case EOT:
+                        logger.debug("EOT Received");
+                        sessionActive = false;
+                        break;
+                    default:
+                        logger.debug("Received unexpected data: " + (char) data + " (ASCII: " + data + ")");
+                        break;
+                }
+            }
+        } catch (IOException e) {
+            logger.error("Error during client communication", e);
+        }
+    }
+
+    private void handleClientOld(Socket clientSocket) {
+        try (InputStream in = new BufferedInputStream(clientSocket.getInputStream()); OutputStream out = new BufferedOutputStream(clientSocket.getOutputStream())) {
             StringBuilder asciiDebugInfo = new StringBuilder();
             boolean sessionActive = true;
             boolean inChecksum = false;
@@ -568,14 +611,14 @@ public class SweLabLumiServer {
         // Result value parsing assumes the result is in the fourth field
         double resultValue = 0.0;
         String resultValueString = fields[3];
-        
+
         try {
             resultValue = Double.parseDouble(fields[3]);
             logger.debug("Result value extracted: {}", resultValue);
         } catch (NumberFormatException e) {
             logger.error("Failed to parse result value from segment: {}", resultSegment, e);
         }
-        
+
         // Units and other details
         String resultUnits = fields[4];
         logger.debug("Result units extracted: {}", resultUnits);
@@ -594,20 +637,7 @@ public class SweLabLumiServer {
                 instrumentName,
                 sampleId
         );
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
     }
 
     public static OrderRecord parseOrderRecord(String orderSegment) {
