@@ -158,7 +158,7 @@ public class SweLabLumiServer {
 
                                     // Create ResultsRecord with the constructor
                                     ResultsRecord rr = new ResultsRecord(testCode, resultValue, resultUnits,
-                                            resultDateTime, "MindRayBC5150", sampleId);
+                                            resultDateTime, "SwelabLumi", sampleId);
 
                                     DataBundle db = new DataBundle();
                                     db.setMiddlewareSettings(SettingsLoader.getSettings());

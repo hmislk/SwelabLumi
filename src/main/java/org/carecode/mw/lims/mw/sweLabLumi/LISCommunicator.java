@@ -116,7 +116,7 @@ public class LISCommunicator {
             ls.setPassword("Buddhika123@");
             ms.setAnalyzerDetails(ad);
             ms.setLimsSettings(ls);
-            ms.getAnalyzerDetails().setAnalyzerName("MindrayBC5150");
+            ms.getAnalyzerDetails().setAnalyzerName("SwelabLumi");
             // Set middleware settings and serialize DataBundle to JSON
             db.setMiddlewareSettings(ms );
             String jsonInputString = gson.toJson(db);
