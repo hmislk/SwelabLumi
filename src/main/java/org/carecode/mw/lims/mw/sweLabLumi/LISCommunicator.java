@@ -112,8 +112,8 @@ public class LISCommunicator {
             MiddlewareSettings ms = new MiddlewareSettings();
             AnalyzerDetails ad = new AnalyzerDetails();
             LimsSettings ls = new LimsSettings();
-            ls.setUsername("buddhika");
-            ls.setPassword("Buddhika123@");
+            ls.setUsername("buddhika"); 
+            ls.setPassword("Buddhika123@"); 
             ms.setAnalyzerDetails(ad);
             ms.setLimsSettings(ls);
             ms.getAnalyzerDetails().setAnalyzerName("SwelabLumi");
