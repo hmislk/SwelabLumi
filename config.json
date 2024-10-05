@@ -1,0 +1,25 @@
+{
+    "analyzerDetails": {
+        "analyzerName": "SweLabLumi",
+        "serialNumber": "1620040",
+        "analyzerId": "2388",
+        "analyzerIP": "192.168.1.165",
+        "analyzerPort": 1100,
+        "communicationType": "TCP/IP",
+        "socketCommunicationType": "Client",
+        "resultSendingCriteria": "Sample",
+        "automaticResultSending": "Yes",
+        "hostQueryInUse": "Yes",
+        "multipleHostQuery": "No",
+        "sampleIdSendingDelay": "0",
+        "resultSendingDelay": "0",
+        "qcResultSendingInUse": "Yes",
+        "departmentAnalyzerId": "12976457",
+        "departmentId": "5622282"
+    },
+    "limsSettings": {
+        "limsServerBaseUrl": "https://digasiri.carecode.org/digasiriNew/api/middleware",
+        "username": "buddhika",
+        "password": "Buddhika123@"
+    }
+}
