@@ -22,7 +22,6 @@ import org.carecode.lims.libraries.LimsSettings;
 import org.carecode.lims.libraries.MiddlewareSettings;
 import org.carecode.lims.libraries.QueryRecord;
 import org.carecode.lims.libraries.ResultsRecord;
-import static org.carecode.mw.lims.mw.sweLabLumi.SweLabLumi.logger;
 
 public class LISCommunicator {
     

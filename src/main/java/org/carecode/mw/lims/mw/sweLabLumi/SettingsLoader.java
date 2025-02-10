@@ -18,7 +18,7 @@ public class SettingsLoader {
         Gson gson = new Gson();
         try {
             // Read and print the contents of the config.json file
-            String filePath = "config.json";
+            String filePath = "E:\\SwelabMW\\settings\\SwelabLumi\\config.json";
             String jsonContent = new String(Files.readAllBytes(Paths.get(filePath)));
             System.out.println("Contents of config.json:");
             System.out.println(jsonContent);
